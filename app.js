@@ -1,13 +1,51 @@
-// app.js
+// Crear el mapa y establecer la vista inicial
+const map = L.map('map', {
+  center: [42.657, -71.324], // Coordenadas de Dracut y Lowell
+  zoom: 14
+});
 
-// Crear el mapa y centrarlo en Lowell y Dracut
-var map = L.map('map').setView([42.6334, -71.3162], 12);  // Coordenadas de Lowell, MA
+// Capa base: Mapa de calles
+const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map); // Añadir directamente al cargar el mapa
 
-// Agregar un "tile layer" base con OpenStreetMap
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+// Capa base: Mapa satelital
+const satellite = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenTopoMap contributors'
+});
 
-// Agregar un marcador en Lowell
-var marker = L.marker([42.6334, -71.3162]).addTo(map);
-marker.bindPopup("<b>Lowell, MA</b>").openPopup();
+// Capa temática: Puntos de interés
+const pointsOfInterest = L.geoJSON(null, {
+  style: { color: 'blue' },
+  onEachFeature: (feature, layer) => {
+      layer.bindPopup(`Lugar: ${feature.properties.name}`);
+  }
+});
+
+// Cargar datos GeoJSON para Puntos de Interés
+fetch('data/points_of_interest.geojson')
+  .then(response => response.json())
+  .then(data => pointsOfInterest.addData(data));
+
+// Capa temática: Zonas de riesgo
+const riskZones = L.geoJSON(null, {
+  style: { color: 'red', weight: 2 }
+});
+
+// Cargar datos GeoJSON para Zonas de Riesgo
+fetch('data/risk_zones.geojson')
+  .then(response => response.json())
+  .then(data => riskZones.addData(data));
+
+// Control de capas
+const baseMaps = {
+  "Mapa de Calles": streets,
+  "Mapa Satelital": satellite
+};
+
+const overlayMaps = {
+  "Puntos de Interés": pointsOfInterest,
+  "Zonas de Riesgo": riskZones
+};
+
+L.control.layers(baseMaps, overlayMaps).addTo(map);
